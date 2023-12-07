@@ -39,56 +39,82 @@ func main() {
     }
     defer testFile.Close()
 
-    // Writing package declaration file
+    // Write package declaration to test file
     fmt.Fprintf(testFile, "package %s\n\nimport \"testing\"\n\n", node.Name.Name)
 
-    // Iterating through the AST and finding functions
+    // Iterate through the AST and find functions and type declarations
     for _, f := range node.Decls {
-        fn, ok := f.(*ast.FuncDecl)
-        if !ok {
-            continue
+        switch decl := f.(type) {
+        case *ast.FuncDecl:
+            generateTestForFunc(decl, testFile)
+        case *ast.GenDecl:
+            if decl.Tok == token.TYPE {
+                for _, spec := range decl.Specs {
+                    if typeSpec, ok := spec.(*ast.TypeSpec); ok {
+                        generateTestForType(typeSpec, testFile)
+                    }
+                }
+            }
         }
-        generateTest(fn, testFile)
     }
 }
 
-func generateTest(fn *ast.FuncDecl, testFile *os.File) {
-    // Check if the function has parameters or return values
-    hasParams := fn.Type.Params != nil && len(fn.Type.Params.List) > 0
-    hasReturns := fn.Type.Results != nil && len(fn.Type.Results.List) > 0
-
-    // Function test name
+func generateTestForFunc(fn *ast.FuncDecl, testFile *os.File) {
+    // Generate a basic test function
     testName := "Test" + fn.Name.Name
+    fmt.Fprintf(testFile, "// %s tests the %s function.\n", testName, fn.Name.Name)
+    fmt.Fprintf(testFile, "func %s(t *testing.T) {\n", testName)
 
-    // Start building the test function
-    var testFunctionBuilder strings.Builder
-    testFunctionBuilder.WriteString(fmt.Sprintf("func %s(t *testing.T) {\n", testName))
-
-    // If the function has parameters, we need to handle them (here we just pass zero values)
-    if hasParams {
-        testFunctionBuilder.WriteString("    // TODO: Add necessary parameters\n")
+    // Mock inputs for parameters (using zero values for simplicity)
+    if fn.Type.Params != nil {
+        for _, p := range fn.Type.Params.List {
+            for _, n := range p.Names {
+                fmt.Fprintf(testFile, "    var %s %s // TODO: Add appropriate mock value\n", n.Name, exprString(p.Type))
+            }
+        }
     }
 
     // Call the function
-    call := fmt.Sprintf("    %s(", fn.Name.Name)
-    if hasParams {
-        call += "/* params */"
+    fmt.Fprintf(testFile, "    ")
+    if fn.Type.Results != nil && len(fn.Type.Results.List) > 0 {
+        fmt.Fprintf(testFile, "got := ")
     }
-    call += ")"
-    if hasReturns {
-        call = "got := " + call
+    fmt.Fprintf(testFile, "%s(", fn.Name.Name)
+    if fn.Type.Params != nil {
+        for i, p := range fn.Type.Params.List {
+            for j, n := range p.Names {
+                fmt.Fprintf(testFile, n.Name)
+                if j < len(p.Names)-1 || i < len(fn.Type.Params.List)-1 {
+                    fmt.Fprintf(testFile, ", ")
+                }
+            }
+        }
     }
-    testFunctionBuilder.WriteString(call + "\n")
+    fmt.Fprintf(testFile, ")\n")
 
-    // If the function has return values, add a basic assertion
-    if hasReturns {
-        testFunctionBuilder.WriteString(fmt.Sprintf("    if got != nil {\n"))
-        testFunctionBuilder.WriteString(fmt.Sprintf("        t.Errorf(\"%s() = %%v, want nil\")\n", fn.Name.Name))
-        testFunctionBuilder.WriteString("    }\n")
+    // Add a basic assertion
+    fmt.Fprintf(testFile, "    // TODO: Add assertions based on the expected behavior of the function\n")
+    
+    fmt.Fprintf(testFile, "}\n\n")
+}
+
+func generateTestForType(typeSpec *ast.TypeSpec, testFile *os.File) {
+    // Placeholder for generating tests for methods of a type
+    fmt.Fprintf(testFile, "// TODO: Generate tests for methods of type %s\n", typeSpec.Name.Name)
+}
+
+func exprString(e ast.Expr) string {
+    switch v := e.(type) {
+    case *ast.Ident:
+        return v.Name
+    case *ast.ArrayType:
+        return "[]" + exprString(v.Elt)
+    case *ast.StarExpr:
+        return "*" + exprString(v.X)
+    case *ast.SelectorExpr:
+        return exprString(v.X) + "." + v.Sel.Name
+    // Add more cases as necessary for different types
+    default:
+        return fmt.Sprintf("%v", v)
     }
-
-    testFunctionBuilder.WriteString("}\n\n")
-
-    // Write the test function to the test file
-    fmt.Fprint(testFile, testFunctionBuilder.String())
 }
