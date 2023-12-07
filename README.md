@@ -1,4 +1,4 @@
-# UnitMaker - Go Test Generator
+# UnitMaker - Go Unit Test Template Generator
 
 ## Introduction
 UnitMaker is a Go application that automatically generates basic unit test templates for Go functions. It reads a Go source file, analyzes the functions, and creates corresponding test function skeletons in a `_test.go` file. This tool simplifies the process of starting unit tests in Go projects.
