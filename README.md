@@ -40,7 +40,7 @@ func TestExampleFunction(t *testing.T) {
     }
 }
 
-Sample of what those parameters may look like for a web observability test I made
+//Sample of what those parameters may look like for a web observability test I made
 
 
 func TestextractHostname(t *testing.T) {
