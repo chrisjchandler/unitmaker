@@ -46,7 +46,7 @@ func TestExampleFunction(t *testing.T) {
 func TestextractHostname(t *testing.T) {
     testURL := "http://aigatehouse.com"
     got := extractHostname(testURL)
-    want := "example.com" // expected result
+    want := "aigatehouse.com" // expected result
 
     if got != want {
         t.Errorf("extractHostname(%q) = %v, want %v", testURL, got, want)
