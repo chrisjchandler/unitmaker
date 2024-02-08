@@ -44,7 +44,7 @@ func TestExampleFunction(t *testing.T) {
 
 
 func TestextractHostname(t *testing.T) {
-    testURL := "http://example.com"
+    testURL := "http://aigatehouse.com"
     got := extractHostname(testURL)
     want := "example.com" // expected result
 
